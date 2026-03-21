@@ -44,6 +44,19 @@
     background: var(--cream);
   }
 
+  .nav-brand {
+    position: absolute;
+    top: 2rem;
+    left: 2rem;
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--dark);
+    pointer-events: none;
+    user-select: none;
+  }
+
   .nav-row {
     display: flex;
     align-items: center;
@@ -711,7 +724,8 @@
   }
 
   @media (max-width: 640px) {
-    nav { gap: 2rem; padding: 1.25rem; }
+    nav { gap: 0.4rem; padding: 1.25rem; }
+    .nav-brand { display: none; }
     .products { padding: 5rem 1rem 3rem; }
     .products-grid { gap: 1.5rem; grid-template-columns: 1fr; }
     .detail-back { left: 1rem; top: 1.25rem; }
@@ -728,6 +742,7 @@
 <body>
 
 <nav>
+  <span class="nav-brand">@WOAHMAX</span>
   <div class="nav-row">
     <button type="button" class="nav-filter" data-filter="new">New</button>
     <button type="button" class="nav-filter active" data-filter="archive">All</button>
