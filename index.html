@@ -42,7 +42,7 @@
     background: var(--cream);
   }
 
-  nav a {
+  nav button {
     font-size: 0.75rem;
     font-weight: 400;
     letter-spacing: 0.25em;
@@ -50,10 +50,19 @@
     color: var(--dark);
     text-decoration: none;
     transition: color 0.2s;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
   }
 
-  nav a:hover {
+  nav button:hover,
+  nav button.active {
     color: var(--earth);
+  }
+
+  nav button.active {
+    font-weight: 600;
   }
 
   /* CART ICON */
@@ -706,8 +715,10 @@
 <body>
 
 <nav>
-  <a href="#" id="nav-merch">Merch</a>
-  <a href="#">Videos</a>
+  <button type="button" class="nav-filter" data-filter="new">New</button>
+  <button type="button" class="nav-filter active" data-filter="archive">Archive</button>
+  <button type="button" class="nav-filter" data-filter="shirts">Shirts</button>
+  <button type="button" class="nav-filter" data-filter="accessories">Accessories</button>
 </nav>
 
 <div class="cart-icon" id="cart-icon">
@@ -850,7 +861,7 @@
     var cartIcon = document.getElementById('cart-icon');
     var arrowLeft = document.getElementById('arrow-left');
     var arrowRight = document.getElementById('arrow-right');
-    var navMerch = document.getElementById('nav-merch');
+    var navFilters = Array.from(document.querySelectorAll('.nav-filter'));
     var nav = document.querySelector('nav');
     var isDetailPage = false;
     var scrollCooldown = false;
@@ -864,9 +875,11 @@
     var checkoutEmail = document.getElementById('checkout-email');
     var cartStorageKey = 'woahmax-cart-v1';
     var shopifyProductsByKey = {};
+    var catalogProducts = [];
     var shopifyConfig = normalizeShopifyConfig(window.WOAHMAX_SHOPIFY || {});
     var cart = loadCart();
     var toastTimeout;
+    var activeFilter = 'archive';
 
     function normalizeShopifyConfig(config) {
       var normalized = {
@@ -901,6 +914,67 @@
         normalizeLookupValue(productHandle) ||
         normalizeLookupValue(productName)
       );
+    }
+
+    function detectProductCategory(source) {
+      var haystack = [
+        source && source.productType,
+        source && source.handle,
+        source && source.title,
+        source && source.name
+      ]
+        .filter(function(value) {
+          return Boolean(value);
+        })
+        .join(' ')
+        .toLowerCase();
+
+      if (
+        haystack.indexOf('shirt') !== -1 ||
+        haystack.indexOf('tee') !== -1 ||
+        haystack.indexOf('top') !== -1
+      ) {
+        return 'shirts';
+      }
+
+      if (
+        haystack.indexOf('hat') !== -1 ||
+        haystack.indexOf('cap') !== -1 ||
+        haystack.indexOf('accessor') !== -1 ||
+        haystack.indexOf('beanie') !== -1 ||
+        haystack.indexOf('bag') !== -1
+      ) {
+        return 'accessories';
+      }
+
+      return 'archive';
+    }
+
+    function updateFilterButtons() {
+      navFilters.forEach(function(button) {
+        button.classList.toggle(
+          'active',
+          button.getAttribute('data-filter') === activeFilter
+        );
+      });
+    }
+
+    function filterProducts(products) {
+      return products.filter(function(product) {
+        if (activeFilter === 'archive') return true;
+        if (activeFilter === 'new') return Boolean(product.inStock);
+        return product.category === activeFilter;
+      });
+    }
+
+    function renderCatalogProducts() {
+      renderProductsGrid(filterProducts(catalogProducts));
+    }
+
+    function setActiveFilter(filterName) {
+      activeFilter = filterName;
+      updateFilterButtons();
+      renderCatalogProducts();
     }
 
     function isShopifyConfigured() {
@@ -1062,6 +1136,7 @@
         productKey: getProductKey(product),
         shopifyId: getProductId(product),
         shopifyHandle: getProductHandle(product),
+        productType: product.getAttribute('data-product-type') || '',
         price: product.getAttribute('data-price') || '$0',
         sizes: product.getAttribute('data-sizes') || '',
         images: (product.getAttribute('data-images') || '')
@@ -1072,7 +1147,13 @@
           .filter(function(image) {
             return image;
           }),
-        soldout: product.getAttribute('data-soldout') === 'true'
+        soldout: product.getAttribute('data-soldout') === 'true',
+        inStock: product.getAttribute('data-soldout') !== 'true',
+        category: detectProductCategory({
+          handle: getProductHandle(product),
+          name: getProductName(product),
+          productType: product.getAttribute('data-product-type') || ''
+        })
       };
     }
 
@@ -1103,6 +1184,9 @@
       }
       if (productData.shopifyHandle) {
         product.setAttribute('data-shopify-handle', productData.shopifyHandle);
+      }
+      if (productData.productType) {
+        product.setAttribute('data-product-type', productData.productType);
       }
       if (productData.soldout) {
         product.setAttribute('data-soldout', 'true');
@@ -1182,7 +1266,7 @@
 
     function getShopifyProductFields() {
       return (
-        'id title handle availableForSale ' +
+        'id title handle productType availableForSale ' +
         'featuredImage { url altText } ' +
         'images(first: 10) { nodes { url altText } } ' +
         'variants(first: 50) { ' +
@@ -1299,6 +1383,8 @@
           shopifyId: shopifyProduct.id || (fallbackProduct && fallbackProduct.shopifyId) || '',
           shopifyHandle:
             shopifyProduct.handle || (fallbackProduct && fallbackProduct.shopifyHandle) || '',
+          productType:
+            shopifyProduct.productType || (fallbackProduct && fallbackProduct.productType) || '',
           price: displayChoice
             ? formatMoney(displayChoice.unitPrice, displayChoice.currencyCode)
             : (fallbackProduct && fallbackProduct.price) || '$0',
@@ -1306,7 +1392,15 @@
             ? buildSizesAttribute(choices)
             : (fallbackProduct && fallbackProduct.sizes) || '',
           images: imageUrls,
-          soldout: availableChoices.length === 0
+          soldout: availableChoices.length === 0,
+          inStock: availableChoices.length > 0,
+          category: detectProductCategory({
+            handle:
+              shopifyProduct.handle || (fallbackProduct && fallbackProduct.shopifyHandle) || '',
+            title: displayName,
+            productType:
+              shopifyProduct.productType || (fallbackProduct && fallbackProduct.productType) || ''
+          })
         },
         productState: {
           available: availableChoices.length > 0,
@@ -1361,15 +1455,18 @@
         shopifyProductsByKey = {};
 
         if (!shopifyProducts.length) {
-          renderProductsGrid([]);
+          catalogProducts = [];
+          renderCatalogProducts();
           return;
         }
 
-        var catalogProducts = buildProductsFromShopifyCatalog(shopifyProducts);
-        shopifyProductsByKey = catalogProducts.states;
-        renderProductsGrid(catalogProducts.products);
+        var catalogResult = buildProductsFromShopifyCatalog(shopifyProducts);
+        shopifyProductsByKey = catalogResult.states;
+        catalogProducts = catalogResult.products;
+        renderCatalogProducts();
       } catch (error) {
-        renderProductsGrid([]);
+        catalogProducts = [];
+        renderCatalogProducts();
         console.warn('Shopify product sync failed. No Shopify products were rendered.', error);
       }
     }
@@ -1674,8 +1771,12 @@
 
     updateCartCount();
     renderCheckout();
-    renderProductsGrid(isShopifyConfigured() ? [] : fallbackProducts);
-    syncProductsFromShopify();
+    catalogProducts = isShopifyConfigured() ? [] : fallbackProducts.slice();
+    updateFilterButtons();
+    renderCatalogProducts();
+    if (isShopifyConfigured()) {
+      syncProductsFromShopify();
+    }
     productsGrid.addEventListener('click', function(event) {
       var product = event.target.closest('.product');
       var productIndex;
@@ -1707,12 +1808,14 @@
     });
 
     detailBack.addEventListener('click', showMain);
-    if (navMerch) {
-      navMerch.addEventListener('click', function(e) {
-        e.preventDefault();
-        showMain();
+    navFilters.forEach(function(button) {
+      button.addEventListener('click', function() {
+        if (!pageMain.classList.contains('active')) {
+          showMain();
+        }
+        setActiveFilter(button.getAttribute('data-filter') || 'archive');
       });
-    }
+    });
 
     cartIcon.addEventListener('click', showCheckout);
     checkoutBack.addEventListener('click', showMain);
