@@ -36,10 +36,19 @@
     right: 0;
     z-index: 100;
     display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    gap: 4rem;
+    gap: 0.4rem;
     padding: 2rem;
     background: var(--cream);
+  }
+
+  .nav-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
   }
 
   nav button {
@@ -47,7 +56,7 @@
     font-weight: 400;
     letter-spacing: 0.25em;
     text-transform: uppercase;
-    color: var(--dark);
+    color: var(--stone);
     text-decoration: none;
     transition: color 0.2s;
     border: none;
@@ -56,9 +65,12 @@
     font-family: inherit;
   }
 
-  nav button:hover,
-  nav button.active {
+  nav button:hover {
     color: var(--earth);
+  }
+
+  nav button.active {
+    color: var(--dark);
   }
 
   nav button.active {
@@ -715,10 +727,14 @@
 <body>
 
 <nav>
-  <button type="button" class="nav-filter" data-filter="new">New</button>
-  <button type="button" class="nav-filter active" data-filter="archive">Archive</button>
-  <button type="button" class="nav-filter" data-filter="shirts">Shirts</button>
-  <button type="button" class="nav-filter" data-filter="accessories">Accessories</button>
+  <div class="nav-row">
+    <button type="button" class="nav-filter" data-filter="new">New</button>
+    <button type="button" class="nav-filter active" data-filter="archive">Archive</button>
+  </div>
+  <div class="nav-row">
+    <button type="button" class="nav-filter" data-filter="shirts">Shirts</button>
+    <button type="button" class="nav-filter" data-filter="accessories">Accessories</button>
+  </div>
 </nav>
 
 <div class="cart-icon" id="cart-icon">
