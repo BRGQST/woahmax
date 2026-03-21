@@ -1298,50 +1298,27 @@
       };
     }
 
-    function mergeProductsWithShopify(shopifyProducts) {
+    function findFallbackProduct(shopifyProduct) {
+      return (
+        fallbackProducts.find(function(fallbackProduct) {
+          return (
+            (fallbackProduct.shopifyId && fallbackProduct.shopifyId === shopifyProduct.id) ||
+            (fallbackProduct.shopifyHandle &&
+              normalizeLookupValue(fallbackProduct.shopifyHandle) ===
+                normalizeLookupValue(shopifyProduct.handle)) ||
+            normalizeLookupValue(fallbackProduct.name) === normalizeLookupValue(shopifyProduct.title)
+          );
+        }) || null
+      );
+    }
+
+    function buildProductsFromShopifyCatalog(shopifyProducts) {
       var productsToRender = [];
       var productStates = {};
-      var matchedShopifyKeys = {};
-      var shopifyById = {};
-      var shopifyByHandle = {};
-      var shopifyByTitle = {};
 
       shopifyProducts.forEach(function(shopifyProduct) {
-        if (shopifyProduct.id) {
-          shopifyById[shopifyProduct.id] = shopifyProduct;
-        }
-        if (shopifyProduct.handle) {
-          shopifyByHandle[normalizeLookupValue(shopifyProduct.handle)] = shopifyProduct;
-        }
-        if (shopifyProduct.title) {
-          shopifyByTitle[normalizeLookupValue(shopifyProduct.title)] = shopifyProduct;
-        }
-      });
-
-      fallbackProducts.forEach(function(fallbackProduct) {
-        var shopifyProduct =
-          shopifyById[fallbackProduct.shopifyId] ||
-          shopifyByHandle[normalizeLookupValue(fallbackProduct.shopifyHandle)] ||
-          shopifyByTitle[normalizeLookupValue(fallbackProduct.name)] ||
-          null;
-
-        if (!shopifyProduct) {
-          productsToRender.push(fallbackProduct);
-          return;
-        }
-
+        var fallbackProduct = findFallbackProduct(shopifyProduct);
         var builtProduct = buildProductFromShopify(shopifyProduct, fallbackProduct);
-        var matchKey = getShopifyMatchKey(shopifyProduct);
-        matchedShopifyKeys[matchKey] = true;
-        productsToRender.push(builtProduct.productData);
-        productStates[builtProduct.productData.productKey] = builtProduct.productState;
-      });
-
-      shopifyProducts.forEach(function(shopifyProduct) {
-        var matchKey = getShopifyMatchKey(shopifyProduct);
-        if (matchedShopifyKeys[matchKey]) return;
-
-        var builtProduct = buildProductFromShopify(shopifyProduct, null);
         productsToRender.push(builtProduct.productData);
         productStates[builtProduct.productData.productKey] = builtProduct.productState;
       });
@@ -1361,13 +1338,19 @@
           ? ((data.collection && data.collection.products && data.collection.products.nodes) || [])
           : ((data.products && data.products.nodes) || []);
 
-        if (!shopifyProducts.length) return;
+        shopifyProductsByKey = {};
 
-        var mergedProducts = mergeProductsWithShopify(shopifyProducts);
-        shopifyProductsByKey = mergedProducts.states;
-        renderProductsGrid(mergedProducts.products);
+        if (!shopifyProducts.length) {
+          renderProductsGrid([]);
+          return;
+        }
+
+        var catalogProducts = buildProductsFromShopifyCatalog(shopifyProducts);
+        shopifyProductsByKey = catalogProducts.states;
+        renderProductsGrid(catalogProducts.products);
       } catch (error) {
-        console.warn('Shopify product sync failed. Falling back to local product data.', error);
+        renderProductsGrid([]);
+        console.warn('Shopify product sync failed. No Shopify products were rendered.', error);
       }
     }
 
@@ -1671,7 +1654,7 @@
 
     updateCartCount();
     renderCheckout();
-    renderProductsGrid(fallbackProducts);
+    renderProductsGrid(isShopifyConfigured() ? [] : fallbackProducts);
     syncProductsFromShopify();
     productsGrid.addEventListener('click', function(event) {
       var product = event.target.closest('.product');
