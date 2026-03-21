@@ -727,7 +727,7 @@
     nav { gap: 0.4rem; padding: 1.25rem; }
     .nav-brand { display: none; }
     .products { padding: 5rem 1rem 3rem; }
-    .products-grid { gap: 1.5rem; grid-template-columns: 1fr; }
+    .products-grid { gap: 0.75rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .detail-back { left: 1rem; top: 1.25rem; }
     .cart-icon { right: 1rem; top: 1.25rem; }
     .detail-image { max-width: 90vw; }
@@ -748,8 +748,8 @@
     <button type="button" class="nav-filter active" data-filter="archive">All</button>
   </div>
   <div class="nav-row">
-    <button type="button" class="nav-filter" data-filter="shirts">Shirts</button>
-    <button type="button" class="nav-filter" data-filter="accessories">Accessories</button>
+    <button type="button" class="nav-filter" data-filter="shirts">Apparrel</button>
+    <button type="button" class="nav-filter" data-filter="accessories">Headwear</button>
   </div>
 </nav>
 
