@@ -45,8 +45,8 @@
   }
 
   .nav-brand {
-    position: absolute;
-    top: 2rem;
+    position: fixed;
+    top: 50%;
     left: 2rem;
     font-size: 0.75rem;
     font-weight: 400;
@@ -55,6 +55,14 @@
     color: var(--dark);
     pointer-events: none;
     user-select: none;
+    opacity: 1;
+    transition: opacity 0.45s ease;
+    transform: translateY(-50%);
+    z-index: 99;
+  }
+
+  .nav-brand.is-hidden {
+    opacity: 0;
   }
 
   .nav-row {
@@ -782,10 +790,6 @@
       </div>
     </div>
   </section>
-
-  <footer>
-    <p class="copyright">&copy; 2026 WOAHMAX</p>
-  </footer>
 </div>
 
 <span class="detail-back" id="detail-back">&lt; Back</span>
@@ -894,6 +898,7 @@
     var cartIcon = document.getElementById('cart-icon');
     var arrowLeft = document.getElementById('arrow-left');
     var arrowRight = document.getElementById('arrow-right');
+    var navBrand = document.querySelector('.nav-brand');
     var navFilters = Array.from(document.querySelectorAll('.nav-filter'));
     var nav = document.querySelector('nav');
     var isDetailPage = false;
@@ -1710,12 +1715,17 @@
       productArray.forEach(function(p) {
         p.classList.remove('fade-out', 'zoom-in');
       });
-      footer.classList.remove('fade-out');
+      if (footer) {
+        footer.classList.remove('fade-out');
+      }
       detailBack.classList.remove('visible');
       pageMain.classList.add('active');
       pageDetail.classList.remove('active');
       pageCheckout.classList.remove('active');
       nav.style.display = 'flex';
+      if (navBrand) {
+        navBrand.classList.remove('is-hidden');
+      }
       window.scrollTo({ top: 0 });
     }
 
@@ -1788,6 +1798,9 @@
       pageMain.classList.remove('active');
       pageDetail.classList.add('active');
       detailBack.classList.add('visible');
+      if (navBrand) {
+        navBrand.classList.add('is-hidden');
+      }
       window.scrollTo({ top: 0 });
     }
 
@@ -1803,7 +1816,9 @@
           p.classList.add('fade-out');
         }
       });
-      footer.classList.add('fade-out');
+      if (footer) {
+        footer.classList.add('fade-out');
+      }
 
       // Wait for animation then show detail
       setTimeout(function() {
