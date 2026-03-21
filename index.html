@@ -993,7 +993,16 @@
     }
 
     function parseFallbackSizes(product) {
-      var sizes = product.getAttribute('data-sizes');
+      var sizes = '';
+
+      if (product) {
+        if (typeof product.getAttribute === 'function') {
+          sizes = product.getAttribute('data-sizes');
+        } else if (typeof product.sizes === 'string') {
+          sizes = product.sizes;
+        }
+      }
+
       if (!sizes) return [];
 
       return sizes.split(',').map(function(sizeData) {
@@ -1222,12 +1231,23 @@
     }
 
     function buildProductFromShopify(shopifyProduct, fallbackProduct) {
-      var referenceProduct = fallbackProduct || {
-        getAttribute: function(attribute) {
-          if (attribute === 'data-price') return '$0';
-          return '';
-        }
-      };
+      var referenceProduct = fallbackProduct
+        ? {
+            getAttribute: function(attribute) {
+              if (attribute === 'data-price') return fallbackProduct.price || '$0';
+              if (attribute === 'data-sizes') return fallbackProduct.sizes || '';
+              return '';
+            },
+            sizes: fallbackProduct.sizes || ''
+          }
+        : {
+            getAttribute: function(attribute) {
+              if (attribute === 'data-price') return '$0';
+              if (attribute === 'data-sizes') return '';
+              return '';
+            },
+            sizes: ''
+          };
       var variants = shopifyProduct.variants && shopifyProduct.variants.nodes
         ? shopifyProduct.variants.nodes
         : [];
